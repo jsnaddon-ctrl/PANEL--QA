@@ -137,7 +137,7 @@
 <script>
 const { jsPDF } = window.jspdf;
 const CLIENT_ID = '150fa2bd-c920-434c-acfd-abe1cc9fd805';
-const REDIRECT_URI = 'https://jsnaddon-ctrl.github.io/panel-qa/panel-qa.html';
+const REDIRECT_URI = 'https://jsnaddon-ctrl.github.io/PANEL--QA/panel-qa.html';
 const SCOPES = ['Files.ReadWrite.All', 'User.Read'];
 // Save path: Quality Assurance/Documents/QA/SPL/[job name]/
 const OD_BASE = '/Quality Assurance/Documents/QA/SPL';
@@ -148,7 +148,7 @@ const photos = [null,null,null,null];
 async function initMSAL() {
   if (msalInstance) return;
   msalInstance = new msal.PublicClientApplication({
-    auth: { clientId: CLIENT_ID, authority: 'https://login.microsoftonline.com/common', redirectUri: REDIRECT_URI },
+    auth: { clientId: CLIENT_ID, authority: 'https://login.microsoftonline.com/82040108-96d2-4e15-a913-3cfe768d588f', redirectUri: REDIRECT_URI },
     cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: true }
   });
   await msalInstance.initialize();
