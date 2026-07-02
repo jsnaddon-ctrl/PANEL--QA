@@ -93,6 +93,13 @@
 <main>
   <div class="card">
     <div class="card-title">Job details</div>
+    <div class="field-group">
+      <label>Company</label>
+      <div class="pf-row">
+        <button class="pf-btn" id="btn-spl" onclick="setCompany('SPL')">SPL</button>
+        <button class="pf-btn" id="btn-acmf" onclick="setCompany('ACMF')">ACMF</button>
+      </div>
+    </div>
     <div class="field-group"><label>Job name / address</label><input type="text" id="job-name" placeholder="e.g. 1 Cook Street" autocomplete="off"></div>
     <div class="field-group"><label>Batch #</label><input type="text" id="batch-num" placeholder="e.g. BATCH-007" autocomplete="off"></div>
     <div class="field-group"><label>Panel ID / serial number</label><input type="text" id="panel-id" placeholder="e.g. PNL-2024-0042" autocomplete="off"></div>
@@ -138,11 +145,11 @@
 const { jsPDF } = window.jspdf;
 const CLIENT_ID = '150fa2bd-c920-434c-acfd-abe1cc9fd805';
 const REDIRECT_URI = 'https://jsnaddon-ctrl.github.io/PANEL--QA/panel-qa.html';
-const SCOPES = ['Files.ReadWrite.All', 'User.Read'];
+const SCOPES = ['Files.ReadWrite.All', 'Sites.ReadWrite.All', 'User.Read'];
 // Save path: Quality Assurance/Documents/QA/SPL/[job name]/
-const OD_BASE = '/Quality Assurance/Documents/QA/SPL';
+const SP_BASE = '/sites/QualityAssurance/Shared Documents/QA';
 
-let msalInstance = null, currentAccount = null, inspectionResult = null;
+let msalInstance = null, currentAccount = null, inspectionResult = null, company = null;
 const photos = [null,null,null,null];
 
 async function initMSAL() {
@@ -201,6 +208,12 @@ function updateTimestamp() {
 }
 updateTimestamp(); setInterval(updateTimestamp, 30000);
 
+function setCompany(val) {
+  company = val;
+  document.getElementById('btn-spl').className = 'pf-btn'+(val==='SPL'?' selected-pass':'');
+  document.getElementById('btn-acmf').className = 'pf-btn'+(val==='ACMF'?' selected-pass':'');
+}
+
 function setResult(val) {
   inspectionResult = val;
   document.getElementById('btn-pass').className = 'pf-btn'+(val==='pass'?' selected-pass':'');
@@ -241,6 +254,7 @@ function getFields() {
 }
 function validate() {
   const f = getFields();
+  if (!company)          { toast('Select SPL or ACMF','error'); return null; }
   if (!f.job)            { toast('Enter a job name','error'); return null; }
   if (!f.batch)          { toast('Enter a batch number','error'); return null; }
   if (!f.panel)          { toast('Enter a panel ID','error'); return null; }
@@ -318,7 +332,7 @@ function setProgress(label,pct) {
 }
 
 async function uploadFile(token,path,blob,contentType) {
-  const url='https://graph.microsoft.com/v1.0/me/drive/root:'+encodeURI(path)+':/content';
+  const url='https://graph.microsoft.com/v1.0/sites/symonitenz.sharepoint.com:/sites/QualityAssurance:/drive/root:'+encodeURI(path)+':/content';
   const res=await fetch(url,{method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':contentType},body:blob});
   if(!res.ok){const t=await res.text();throw new Error('Upload failed ('+res.status+'): '+t);}
   return res.json();
@@ -331,7 +345,7 @@ async function saveToOneDrive() {
   setProgress('Generating PDF…',10);
   let doc;
   try{doc=await buildPDF(f);}catch(e){setProgress(null);toast('PDF error','error');return;}
-  const folderPath = OD_BASE+'/'+f.job;
+  const folderPath = '/QA/'+company+'/'+f.job;
   const baseName = safe(f.job+'-'+f.batch+'-'+f.panel);
   setProgress('Uploading PDF…',35);
   try {
@@ -354,13 +368,13 @@ async function saveToOneDrive() {
   setProgress('Done!',100);
   setTimeout(()=>setProgress(null),1200);
   document.getElementById('success-banner').classList.add('show');
-  document.getElementById('success-path').textContent='Saved to: QA / SPL / '+f.job;
+  document.getElementById('success-path').textContent='Saved to: QA / '+company+' / '+f.job;
   toast('Saved to OneDrive ✓','success');
 }
 
 function newInspection() {
-  inspectionResult=null;
-  ['btn-pass','btn-fail'].forEach(id=>document.getElementById(id).className='pf-btn');
+  inspectionResult=null; company=null;
+  ['btn-pass','btn-fail','btn-spl','btn-acmf'].forEach(id=>document.getElementById(id).className='pf-btn');
   document.getElementById('panel-id').value='';
   document.getElementById('notes').value='';
   photos.forEach((_,i)=>{photos[i]=null;document.getElementById('cam-'+i).value='';renderSlot(i);});
