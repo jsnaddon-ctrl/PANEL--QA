@@ -333,8 +333,15 @@ function setProgress(label,pct) {
 }
 
 async function uploadFile(token,path,blob,contentType) {
-  const url='https://graph.microsoft.com/v1.0/sites/symonitenz.sharepoint.com:/sites/QualityAssurance:/drive/root:'+encodeURI(path)+':/content';
-  const res=await fetch(url,{method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':contentType},body:blob});
+  const url='https://graph.microsoft.com/v1.0/sites/symonitenz.sharepoint.com:/sites/QualityAssurance:/drives';
+  // Get the drive ID first time
+  if (!window._driveId) {
+    const dr = await fetch(url, {headers:{Authorization:'Bearer '+token}});
+    const ddata = await dr.json();
+    window._driveId = ddata.value[0].id;
+  }
+  const uploadUrl='https://graph.microsoft.com/v1.0/drives/'+window._driveId+'/root:'+encodeURI('/QA'+path)+':/content';
+  const res=await fetch(uploadUrl,{method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':contentType},body:blob});
   if(!res.ok){const t=await res.text();throw new Error('Upload failed ('+res.status+'): '+t);}
   return res.json();
 }
@@ -346,7 +353,7 @@ async function saveToOneDrive() {
   setProgress('Generating PDF…',10);
   let doc;
   try{doc=await buildPDF(f);}catch(e){setProgress(null);toast('PDF error','error');return;}
-  const folderPath = '/QA/'+company+'/'+f.job;
+  const folderPath = '/'+company+'/'+f.job;
   const baseName = safe(f.job+'-'+f.batch+'-'+f.panel);
   setProgress('Uploading PDF…',35);
   try {
