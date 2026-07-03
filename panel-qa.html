@@ -93,7 +93,7 @@
   <div class="app-icon"><img src="data:image/jpeg;base64," alt="QA"></div>
   <div>
     <h1>Panel QA</h1>
-    <p>Symonite Panels Ltd</p>
+    <p>Symonite Panels Ltd <span style="opacity:0.4;">v1.4</span></p>
   </div>
   <div class="header-right">
     <a class="hbtn" href="https://symonitenz.sharepoint.com/sites/QualityAssurance/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FQualityAssurance%2FShared%20Documents%2FQA" target="_blank">📁 QA Folders</a>
@@ -374,6 +374,27 @@ function setProgress(label,pct){
   document.getElementById('progress-label').textContent=label;
   document.getElementById('progress-bar').style.width=pct+'%';
 }
+async function ensureFolder(token, did, folderPath){
+  // Create folder and all parent folders if they don't exist
+  const parts = folderPath.split('/').filter(Boolean);
+  let current = '';
+  for(const part of parts){
+    current += '/' + part;
+    const checkUrl = 'https://graph.microsoft.com/v1.0/drives/'+did+'/root:'+encodeURI('/QA'+current);
+    const check = await fetch(checkUrl, {headers:{Authorization:'Bearer '+token}});
+    if(!check.ok){
+      // Folder doesn't exist, create it
+      const parentPath = current.substring(0, current.lastIndexOf('/'));
+      const parentUrl = 'https://graph.microsoft.com/v1.0/drives/'+did+'/root:'+encodeURI('/QA'+(parentPath||''))+':/children';
+      await fetch(parentUrl, {
+        method:'POST',
+        headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+        body:JSON.stringify({name:part,folder:{},"@microsoft.graph.conflictBehavior":'ignore'})
+      });
+    }
+  }
+}
+
 async function uploadFile(token,path,blob,contentType){
   const did=await getDriveId(token);
   const url='https://graph.microsoft.com/v1.0/drives/'+did+'/root:'+encodeURI('/QA'+path)+':/content';
@@ -390,6 +411,8 @@ async function saveToOneDrive(){
   try{doc=await buildPDF(f);}catch(e){setProgress(null);toast('PDF error','error');return;}
   const folderPath='/SPL/'+f.job+'/Batch '+f.batch;
   const baseName=safe(f.job+'-'+f.batch+'-'+f.panel);
+  setProgress('Creating folders…',20);
+  try{ await ensureFolder(token, await getDriveId(token), folderPath); }catch(e){ console.warn('Folder create',e); }
   setProgress('Uploading PDF…',35);
   try{
     await uploadFile(token,folderPath+'/'+baseName+'-QA.pdf',doc.output('blob'),'application/pdf');
@@ -411,12 +434,10 @@ async function saveToOneDrive(){
   setTimeout(()=>{
     inspectionResult=null;
     ['btn-pass','btn-fail'].forEach(id=>document.getElementById(id).className='pf-btn');
-    document.getElementById('inspector').value='';
+    ['inspector','job-name','batch-num','panel-id','notes'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.value='';
+    });
     document.getElementById('job-select').value='';
-    document.getElementById('job-name').value='';
-    document.getElementById('batch-num').value='';
-    document.getElementById('panel-id').value='';
-    document.getElementById('notes').value='';
     photos.forEach((_,i)=>{photos[i]=null;document.getElementById('cam-'+i).value='';renderSlot(i);});
     document.getElementById('success-banner').classList.remove('show');
     updateTimestamp();
