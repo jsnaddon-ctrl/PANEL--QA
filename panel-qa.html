@@ -388,7 +388,7 @@ async function saveToOneDrive(){
   setProgress('Generating PDF…',10);
   let doc;
   try{doc=await buildPDF(f);}catch(e){setProgress(null);toast('PDF error','error');return;}
-  const folderPath='/SPL/'+f.job;
+  const folderPath='/SPL/'+f.job+'/'+f.batch;
   const baseName=safe(f.job+'-'+f.batch+'-'+f.panel);
   setProgress('Uploading PDF…',35);
   try{
@@ -404,7 +404,7 @@ async function saveToOneDrive(){
   }
   setProgress('Done!',100);setTimeout(()=>setProgress(null),1200);
   document.getElementById('success-banner').classList.add('show');
-  document.getElementById('success-path').textContent='Saved to: QA / SPL / '+f.job;
+  document.getElementById('success-path').textContent='Saved to: QA / SPL / '+f.job+' / '+f.batch;
   toast('Saved to SharePoint ✓','success');
   loadJobs();
   // Auto clear panel fields after 3 seconds ready for next panel
