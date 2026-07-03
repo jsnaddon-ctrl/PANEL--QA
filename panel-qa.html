@@ -160,10 +160,7 @@
     <p>✅ Saved to SharePoint!</p>
     <small id="success-path"></small>
   </div>
-  <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:0.75rem;">
-    <button class="next-btn" onclick="newInspection()" style="margin-bottom:0;">➕ Next panel</button>
-    <button class="next-btn" onclick="newBatch()" style="margin-bottom:0; border-color:var(--blue-border); color:var(--blue);">🔄 New batch</button>
-  </div>
+  <button class="next-btn" onclick="newInspection()">➕ Next panel (keeps job &amp; batch)</button>
   <div class="actions">
     <button class="btn" onclick="savePDFLocal()">📄 PDF</button>
     <button class="btn btn-primary" onclick="saveToOneDrive()">☁️ Save to OneDrive</button>
@@ -410,16 +407,20 @@ async function saveToOneDrive(){
   document.getElementById('success-path').textContent='Saved to: QA / SPL / '+f.job+' / Batch '+f.batch;
   toast('Saved to SharePoint ✓','success');
   loadJobs();
-  // Auto clear panel fields after 3 seconds, keep job name and batch
+  // Auto clear ALL fields after 3 seconds
   setTimeout(()=>{
     inspectionResult=null;
     ['btn-pass','btn-fail'].forEach(id=>document.getElementById(id).className='pf-btn');
+    document.getElementById('inspector').value='';
+    document.getElementById('job-select').value='';
+    document.getElementById('job-name').value='';
+    document.getElementById('batch-num').value='';
     document.getElementById('panel-id').value='';
     document.getElementById('notes').value='';
     photos.forEach((_,i)=>{photos[i]=null;document.getElementById('cam-'+i).value='';renderSlot(i);});
     document.getElementById('success-banner').classList.remove('show');
     updateTimestamp();
-    toast('Ready for next panel 👍','success');
+    toast('Ready for next inspection 👍','success');
   }, 3000);
 }
 
