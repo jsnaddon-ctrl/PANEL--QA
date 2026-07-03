@@ -106,7 +106,7 @@
     <div class="card-title">Job details</div>
     <div class="field-group">
       <label>Inspector name</label>
-      <input type="text" id="inspector" placeholder="Your name" autocomplete="off">
+      <input type="text" id="inspector" placeholder="Your name" autocomplete="on">
     </div>
     <div class="field-group">
       <label>Job name / address</label>
@@ -160,7 +160,10 @@
     <p>✅ Saved to SharePoint!</p>
     <small id="success-path"></small>
   </div>
-  <button class="next-btn" onclick="newInspection()">➕ Next panel (keeps job &amp; batch)</button>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:0.75rem;">
+    <button class="next-btn" onclick="newInspection()" style="margin-bottom:0;">➕ Next panel</button>
+    <button class="next-btn" onclick="newBatch()" style="margin-bottom:0; border-color:var(--blue-border); color:var(--blue);">🔄 New batch</button>
+  </div>
   <div class="actions">
     <button class="btn" onclick="savePDFLocal()">📄 PDF</button>
     <button class="btn btn-primary" onclick="saveToOneDrive()">☁️ Save to OneDrive</button>
@@ -388,7 +391,7 @@ async function saveToOneDrive(){
   setProgress('Generating PDF…',10);
   let doc;
   try{doc=await buildPDF(f);}catch(e){setProgress(null);toast('PDF error','error');return;}
-  const folderPath='/SPL/'+f.job+'/'+f.batch;
+  const folderPath='/SPL/'+f.job+'/Batch '+f.batch;
   const baseName=safe(f.job+'-'+f.batch+'-'+f.panel);
   setProgress('Uploading PDF…',35);
   try{
@@ -404,10 +407,10 @@ async function saveToOneDrive(){
   }
   setProgress('Done!',100);setTimeout(()=>setProgress(null),1200);
   document.getElementById('success-banner').classList.add('show');
-  document.getElementById('success-path').textContent='Saved to: QA / SPL / '+f.job+' / '+f.batch;
+  document.getElementById('success-path').textContent='Saved to: QA / SPL / '+f.job+' / Batch '+f.batch;
   toast('Saved to SharePoint ✓','success');
   loadJobs();
-  // Auto clear panel fields after 3 seconds ready for next panel
+  // Auto clear panel fields after 3 seconds, keep job name and batch
   setTimeout(()=>{
     inspectionResult=null;
     ['btn-pass','btn-fail'].forEach(id=>document.getElementById(id).className='pf-btn');
@@ -429,6 +432,18 @@ function newInspection(){
   document.getElementById('success-banner').classList.remove('show');
   updateTimestamp();
   toast('Ready for next panel');
+}
+
+function newBatch(){
+  inspectionResult=null;
+  ['btn-pass','btn-fail'].forEach(id=>document.getElementById(id).className='pf-btn');
+  document.getElementById('panel-id').value='';
+  document.getElementById('batch-num').value='';
+  document.getElementById('notes').value='';
+  photos.forEach((_,i)=>{photos[i]=null;document.getElementById('cam-'+i).value='';renderSlot(i);});
+  document.getElementById('success-banner').classList.remove('show');
+  updateTimestamp();
+  toast('Ready for next batch');
 }
 
 let toastTimer;
