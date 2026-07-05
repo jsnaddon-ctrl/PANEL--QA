@@ -93,7 +93,7 @@
   <div class="app-icon"><img src="data:image/jpeg;base64," alt="QA"></div>
   <div>
     <h1>Panel QA</h1>
-    <p>Symonite Panels Ltd <span style="opacity:0.4;">v1.4</span></p>
+    <p>Symonite Panels Ltd <span style="opacity:0.4;">v1.5</span></p>
   </div>
   <div class="header-right">
     <a class="hbtn" href="https://symonitenz.sharepoint.com/sites/QualityAssurance/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FQualityAssurance%2FShared%20Documents%2FQA" target="_blank">📁 QA Folders</a>
@@ -403,7 +403,7 @@ async function uploadFile(token,path,blob,contentType){
   if(!res.ok){const t=await res.text();throw new Error('Upload failed ('+res.status+'): '+t);}
   return res.json();
 }
-async function saveToOneDrive(){
+async function saveToOneDrive(silent=false){
   const f=validate();if(!f)return;
   const token=await getToken();if(!token)return;
   document.getElementById('success-banner').classList.remove('show');
@@ -431,22 +431,33 @@ async function saveToOneDrive(){
   document.getElementById('success-path').textContent='Saved to: QA / SPL / '+f.job+' / Batch '+f.batch;
   toast('Saved to SharePoint ✓','success');
   loadJobs();
-  // Auto clear ALL fields after 3 seconds
-  setTimeout(()=>{
-    inspectionResult=null;
-    ['btn-pass','btn-fail'].forEach(id=>document.getElementById(id).className='pf-btn');
-    ['inspector','job-name','batch-num','panel-id','notes'].forEach(id=>{
-      const el=document.getElementById(id); if(el) el.value='';
-    });
-    document.getElementById('job-select').value='';
-    photos.forEach((_,i)=>{photos[i]=null;document.getElementById('cam-'+i).value='';renderSlot(i);});
-    document.getElementById('success-banner').classList.remove('show');
-    updateTimestamp();
-    toast('Ready for next inspection 👍','success');
-  }, 3000);
+  if(!silent){
+    // Auto clear ALL fields after 3 seconds
+    setTimeout(()=>{
+      inspectionResult=null;
+      ['btn-pass','btn-fail'].forEach(id=>document.getElementById(id).className='pf-btn');
+      ['inspector','job-name','batch-num','panel-id','notes'].forEach(id=>{
+        const el=document.getElementById(id); if(el) el.value='';
+      });
+      document.getElementById('job-select').value='';
+      photos.forEach((_,i)=>{photos[i]=null;document.getElementById('cam-'+i).value='';renderSlot(i);});
+      document.getElementById('success-banner').classList.remove('show');
+      updateTimestamp();
+      toast('Ready for next inspection 👍','success');
+    }, 3000);
+  }
 }
 
-function newInspection(){
+async function newInspection(){
+  // Auto-save current panel before clearing
+  const f = getFields();
+  if(f.panel && inspectionResult){
+    await saveToOneDrive(true);
+  } else if(f.panel || inspectionResult){
+    // Partially filled — warn user
+    if(!confirm('This panel hasn't been fully saved. Continue anyway?')) return;
+  }
+  // Clear for next panel
   inspectionResult=null;
   ['btn-pass','btn-fail'].forEach(id=>document.getElementById(id).className='pf-btn');
   document.getElementById('panel-id').value='';
