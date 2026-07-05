@@ -454,8 +454,8 @@ async function newInspection(){
   if(f.panel && inspectionResult){
     await saveToOneDrive(true);
   } else if(f.panel || inspectionResult){
-    // Partially filled — warn user
-    if(!confirm('This panel hasn't been fully saved. Continue anyway?')) return;
+    // Partially filled - warn user
+    if(!confirm("This panel has not been fully saved. Continue anyway?")) return;
   }
   // Clear for next panel
   inspectionResult=null;
