@@ -115,6 +115,7 @@
         <select id="job-select" onchange="jobSelectChanged()" style="flex:1;">
           <option value="">-- Select job --</option>
         </select>
+        <button onclick="loadJobs()" style="flex-shrink:0; padding:9px 12px; border-radius:var(--radius-sm); background:var(--bg); border:0.5px solid var(--border-strong); font-size:16px; cursor:pointer;" title="Refresh job list">🔄</button>
       </div>
     </div>
     <input type="hidden" id="job-name">
