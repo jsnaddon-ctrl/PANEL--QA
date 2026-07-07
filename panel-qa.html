@@ -93,7 +93,7 @@
   <div class="app-icon"><img src="data:image/jpeg;base64," alt="QA"></div>
   <div>
     <h1>Panel QA</h1>
-    <p>Symonite Panels Ltd <span style="opacity:0.4;">v1.5</span></p>
+    <p>Symonite Panels Ltd <span style="opacity:0.4;">v1.6</span></p>
   </div>
   <div class="header-right">
     <a class="hbtn" href="https://symonitenz.sharepoint.com/sites/QualityAssurance/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FQualityAssurance%2FShared%20Documents%2FQA" target="_blank">📁 QA Folders</a>
@@ -310,52 +310,93 @@ function validate(){
 
 async function buildPDF(f){
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-  const W=210,margin=18;
-  const passColor=inspectionResult==='pass'?[59,109,17]:[121,31,31];
-  const passBg=inspectionResult==='pass'?[234,243,222]:[252,235,235];
-  doc.setFillColor(13,27,42);doc.rect(0,0,W,24,'F');
-  doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
-  doc.text('Panel QA Report',margin,15.5);
-  doc.setFillColor(...passBg);doc.roundedRect(W-52,6,35,12,3,3,'F');
-  doc.setTextColor(...passColor);doc.setFontSize(11);
-  doc.text(inspectionResult.toUpperCase(),W-34.5,14,{align:'center'});
-  let y=34;
-  function sh(title){
-    doc.setFillColor(245,245,243);doc.rect(margin,y-1,W-margin*2,8,'F');
-    doc.setTextColor(100,100,96);doc.setFontSize(8);doc.setFont('helvetica','bold');
-    doc.text(title.toUpperCase(),margin+2,y+4.5);y+=10;
+  const W=210, M=15;
+  const LOGO_INV='data:image/png;base64,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';
+
+  // ── Dark header ──
+  doc.setFillColor(15,15,15);
+  doc.rect(0,0,W,32,'F');
+
+  // White logo
+  doc.addImage(LOGO_INV,'PNG',M,4,70,24);
+
+  // Report title
+  doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(180,180,180);
+  doc.text('PANEL QUALITY ASSURANCE REPORT', W-M, 12, {align:'right'});
+  doc.setFontSize(7.5); doc.setTextColor(110,110,110);
+  doc.text('Symonite Panels Ltd', W-M, 18, {align:'right'});
+
+  // Pass/Fail pill
+  const isPass = inspectionResult==='pass';
+  const pillBg = isPass ? [234,243,222] : [252,235,235];
+  const pillFg = isPass ? [59,109,17] : [121,31,31];
+  const pillBorder = isPass ? [99,153,34] : [226,75,74];
+  doc.setFillColor(...pillBg);
+  doc.roundedRect(W-M-28,23,28,7,2,2,'F');
+  doc.setDrawColor(...pillBorder); doc.setLineWidth(0.3);
+  doc.roundedRect(W-M-28,23,28,7,2,2,'S');
+  doc.setFontSize(8.5); doc.setFont('helvetica','bold'); doc.setTextColor(...pillFg);
+  doc.text(isPass ? '✓  PASS' : '✗  FAIL', W-M-14, 28, {align:'center'});
+
+  // ── Info grid ──
+  let y=40;
+
+  function colLabel(label, x) {
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(150,150,150);
+    doc.text(label, x, y);
   }
-  function row(label,value){
-    doc.setFontSize(10);doc.setFont('helvetica','normal');doc.setTextColor(107,107,103);
-    doc.text(label,margin,y+4);doc.setTextColor(26,26,24);doc.setFont('helvetica','bold');
-    doc.text(value||'—',margin+45,y+4);y+=7;
+  function colValue(value, x, maxW) {
+    doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(15,15,15);
+    doc.text(doc.splitTextToSize(value||'—', maxW)[0], x, y+6.5);
   }
-  sh('Job details');
-  row('Job / Address',f.job);row('Batch #',f.batch);row('Panel ID',f.panel);
-  row('Inspector',f.inspector||'—');row('Result',inspectionResult.toUpperCase());row('Timestamp',f.time);
+
+  colLabel('JOB / ADDRESS', M); colValue(f.job, M, 58);
+  colLabel('BATCH', M+75); colValue(f.batch ? 'Batch '+f.batch : '—', M+75, 40);
+  colLabel('PANEL ID', M+130); colValue(f.panel, M+130, 40);
+  y+=18;
+
+  doc.setDrawColor(225,225,225); doc.setLineWidth(0.3);
+  doc.line(M,y,W-M,y); y+=7;
+
+  colLabel('INSPECTOR', M); colValue(f.inspector||'—', M, 60);
+  colLabel('DATE / TIME', M+75); colValue(f.time, M+75, 90);
+  y+=18;
+
+  doc.line(M,y,W-M,y); y+=7;
+
+  // Notes
   if(f.notes){
-    row('Notes','');y-=7;
-    doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(26,26,24);
-    const lines=doc.splitTextToSize(f.notes,W-margin*2-45);
-    doc.text(lines,margin+45,y+4);y+=lines.length*5+2;
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(150,150,150);
+    doc.text('NOTES', M, y); y+=5;
+    doc.setFontSize(10); doc.setFont('helvetica','normal'); doc.setTextColor(15,15,15);
+    const nl=doc.splitTextToSize(f.notes, W-M*2);
+    doc.text(nl, M, y); y+=nl.length*5.5+7;
+    doc.line(M,y,W-M,y); y+=7;
   }
-  y+=6;
+
+  // ── Photos ──
   const hp=photos.filter(Boolean);
   if(hp.length){
-    sh('Photos ('+hp.length+')');y+=2;
-    const iw=(W-margin*2-8)/2,ih=iw*0.75;let col=0;
-    for(const src of hp){
-      const x=margin+col*(iw+8);
-      if(y+ih>280){doc.addPage();y=18;}
-      try{doc.addImage(src,'JPEG',x,y,iw,ih,'','MEDIUM');}catch(e){}
-      doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);doc.rect(x,y,iw,ih);
-      col++;if(col===2){col=0;y+=ih+6;}
+    doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(150,150,150);
+    doc.text('INSPECTION PHOTOS ('+hp.length+')', M, y); y+=5;
+    const gutter=5, imgW=(W-M*2-gutter)/2, imgH=imgW*0.72;
+    for(let i=0;i<hp.length;i++){
+      const x=M+(i%2)*(imgW+gutter);
+      const yy=y+Math.floor(i/2)*(imgH+gutter);
+      if(yy+imgH>280){doc.addPage();y=15;}
+      try{doc.addImage(hp[i],'JPEG',x,yy,imgW,imgH,'','MEDIUM');}catch(e){}
+      doc.setDrawColor(210,210,210); doc.setLineWidth(0.3);
+      doc.roundedRect(x,yy,imgW,imgH,2,2,'S');
     }
-    if(col===1)y+=ih+6;
   }
-  doc.setFontSize(8);doc.setTextColor(160,160,155);
-  doc.text('Symonite Panels Ltd — Panel QA',margin,290);
-  doc.text('Page 1',W-margin,290,{align:'right'});
+
+  // ── Footer ──
+  doc.setFillColor(15,15,15);
+  doc.rect(0,283,W,14,'F');
+  doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(120,120,120);
+  doc.text('Symonite Panels Ltd  |  Panel QA Report  |  Confidential', M, 291);
+  doc.text('Page 1', W-M, 291, {align:'right'});
+
   return doc;
 }
 function safe(s){return s.replace(/[^a-z0-9-_. ]/gi,'_').trim();}
