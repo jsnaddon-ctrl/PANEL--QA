@@ -93,7 +93,7 @@
   <div class="app-icon"><img src="data:image/jpeg;base64," alt="QA"></div>
   <div>
     <h1>Panel QA</h1>
-    <p>Symonite Panels Ltd <span style="opacity:0.4;">v1.7</span></p>
+    <p>Symonite Panels Ltd <span style="opacity:0.4;">v1.8</span></p>
   </div>
   <div class="header-right">
     <a class="hbtn" href="https://symonitenz.sharepoint.com/sites/QualityAssurance/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FQualityAssurance%2FShared%20Documents%2FQA" target="_blank">📁 QA Folders</a>
@@ -507,7 +507,7 @@ async function newInspection(){
     // Partially filled - warn user
     if(!confirm("This panel has not been fully saved. Continue anyway?")) return;
   }
-  // Clear for next panel
+  // Clear for next panel - keep job, batch and inspector
   inspectionResult=null;
   ['btn-pass','btn-fail'].forEach(id=>document.getElementById(id).className='pf-btn');
   document.getElementById('panel-id').value='';
