@@ -93,7 +93,7 @@
   <div class="app-icon"><img src="data:image/jpeg;base64," alt="QA"></div>
   <div>
     <h1>Panel QA</h1>
-    <p>Symonite Panels Ltd <span style="opacity:0.4;">v1.6</span></p>
+    <p>Symonite Panels Ltd <span style="opacity:0.4;">v1.7</span></p>
   </div>
   <div class="header-right">
     <a class="hbtn" href="https://symonitenz.sharepoint.com/sites/QualityAssurance/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FQualityAssurance%2FShared%20Documents%2FQA" target="_blank">📁 QA Folders</a>
@@ -175,6 +175,7 @@ const TENANT_ID = '82040108-96d2-4e15-a913-3cfe768d588f';
 const REDIRECT_URI = 'https://jsnaddon-ctrl.github.io/PANEL--QA/panel-qa.html';
 const SCOPES = ['Files.ReadWrite.All','Sites.ReadWrite.All','User.Read'];
 let msalInstance=null, currentAccount=null, inspectionResult=null, driveId=null;
+let panelCounter=1, lastPanelId="";
 const photos=[null,null,null,null];
 
 async function initMSAL(){
@@ -452,7 +453,14 @@ async function saveToOneDrive(silent=false){
   let doc;
   try{doc=await buildPDF(f);}catch(e){setProgress(null);toast('PDF error','error');return;}
   const folderPath='/SPL/'+f.job+'/Batch '+f.batch;
-  const baseName=safe(f.job+'-'+f.batch+'-'+f.panel);
+  // Auto increment counter if same panel ID
+  if(f.panel && f.panel===lastPanelId){
+    panelCounter++;
+  } else {
+    panelCounter=1;
+    lastPanelId=f.panel;
+  }
+  const baseName=safe(f.job+'-'+f.batch+'-'+f.panel+'-'+panelCounter);
   setProgress('Creating folders…',20);
   try{ await ensureFolder(token, await getDriveId(token), folderPath); }catch(e){ console.warn('Folder create',e); }
   setProgress('Uploading PDF…',35);
@@ -484,6 +492,7 @@ async function saveToOneDrive(silent=false){
       photos.forEach((_,i)=>{photos[i]=null;document.getElementById('cam-'+i).value='';renderSlot(i);});
       document.getElementById('success-banner').classList.remove('show');
       updateTimestamp();
+      panelCounter=1; lastPanelId='';
       toast('Ready for next inspection 👍','success');
     }, 3000);
   }
