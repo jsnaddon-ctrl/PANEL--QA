@@ -93,7 +93,7 @@
   <div class="app-icon"><img src="data:image/jpeg;base64," alt="QA"></div>
   <div>
     <h1>Panel QA</h1>
-    <p>Symonite Panels Ltd <span style="opacity:0.4;">v1.9</span></p>
+    <p>Symonite Panels Ltd <span style="opacity:0.4;">v2.0</span></p>
   </div>
   <div class="header-right">
     <a class="hbtn" href="https://symonitenz.sharepoint.com/sites/QualityAssurance/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FQualityAssurance%2FShared%20Documents%2FQA" target="_blank">📁 QA Folders</a>
@@ -175,7 +175,7 @@ const TENANT_ID = '82040108-96d2-4e15-a913-3cfe768d588f';
 const REDIRECT_URI = 'https://jsnaddon-ctrl.github.io/PANEL--QA/panel-qa.html';
 const SCOPES = ['Files.ReadWrite.All','Sites.ReadWrite.All','User.Read'];
 let msalInstance=null, currentAccount=null, inspectionResult=null, driveId=null;
-let panelCounter=1, lastPanelId="";
+let panelCounter=1, lastPanelId="", savedJob="";
 const photos=[null,null,null,null];
 
 async function initMSAL(){
@@ -248,8 +248,13 @@ async function loadJobs(){
 }
 function jobSelectChanged(){
   const val=document.getElementById('job-select').value;
-  if(val&&val!=='__new__') document.getElementById('job-name').value=val;
-  else document.getElementById('job-name').value='';
+  if(val&&val!=='__new__'){
+    document.getElementById('job-name').value=val;
+    savedJob=val;
+  } else {
+    document.getElementById('job-name').value='';
+    savedJob='';
+  }
 }
 
 function updateTimestamp(){
@@ -489,6 +494,11 @@ async function saveToOneDrive(silent=false){
       document.getElementById('notes').value='';
       photos.forEach((_,i)=>{photos[i]=null;document.getElementById('cam-'+i).value='';renderSlot(i);});
       document.getElementById('success-banner').classList.remove('show');
+      // Restore saved job
+      if(savedJob){
+        document.getElementById('job-name').value=savedJob;
+        document.getElementById('job-select').value=savedJob;
+      }
       updateTimestamp();
       toast('Ready for next inspection 👍','success');
     }, 3000);
@@ -511,6 +521,11 @@ async function newInspection(){
   document.getElementById('notes').value='';
   photos.forEach((_,i)=>{photos[i]=null;document.getElementById('cam-'+i).value='';renderSlot(i);});
   document.getElementById('success-banner').classList.remove('show');
+  // Restore saved job
+  if(savedJob){
+    document.getElementById('job-name').value=savedJob;
+    document.getElementById('job-select').value=savedJob;
+  }
   updateTimestamp();
   toast('Ready for next panel');
 }
