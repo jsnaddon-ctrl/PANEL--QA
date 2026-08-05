@@ -93,7 +93,7 @@
   <div class="app-icon"><img src="data:image/jpeg;base64," alt="QA"></div>
   <div>
     <h1>Panel QA</h1>
-    <p>Symonite Panels Ltd <span style="opacity:0.4;">v1.8</span></p>
+    <p>Symonite Panels Ltd <span style="opacity:0.4;">v1.9</span></p>
   </div>
   <div class="header-right">
     <a class="hbtn" href="https://symonitenz.sharepoint.com/sites/QualityAssurance/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FQualityAssurance%2FShared%20Documents%2FQA" target="_blank">📁 QA Folders</a>
@@ -485,14 +485,11 @@ async function saveToOneDrive(silent=false){
     setTimeout(()=>{
       inspectionResult=null;
       ['btn-pass','btn-fail'].forEach(id=>document.getElementById(id).className='pf-btn');
-      ['inspector','job-name','batch-num','panel-id','notes'].forEach(id=>{
-        const el=document.getElementById(id); if(el) el.value='';
-      });
-      document.getElementById('job-select').value='';
+      document.getElementById('panel-id').value='';
+      document.getElementById('notes').value='';
       photos.forEach((_,i)=>{photos[i]=null;document.getElementById('cam-'+i).value='';renderSlot(i);});
       document.getElementById('success-banner').classList.remove('show');
       updateTimestamp();
-      panelCounter=1; lastPanelId='';
       toast('Ready for next inspection 👍','success');
     }, 3000);
   }
