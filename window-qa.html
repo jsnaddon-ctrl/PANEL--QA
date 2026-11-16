@@ -403,7 +403,7 @@ const nowISO=()=>new Date().toISOString();
 const fmtDate=iso=>{ if(!iso) return ''; const d=new Date(iso); return d.toLocaleDateString('en-NZ',{day:'numeric',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'}); };
 function inspector(){ return $('inspector').value.trim(); }
 function toast(msg,type){ const el=$('toast'); el.textContent=msg; el.className='toast show'+(type?' '+type:''); clearTimeout(toast.t); toast.t=setTimeout(()=>el.className='toast',3400); }
-function progress(lbl,pct){ const el=$('progress'); if(pct===null){el.classList.remove('show');return;} el.classList.add('show'); $('prog-lbl').textContent=lbl; $('prog-fill').style.width=pct+'%'; }
+function progress(lbl,pct){ const el=$('progress'); if(lbl===null||pct===null){el.classList.remove('show');return;} el.classList.add('show'); $('prog-lbl').textContent=lbl; $('prog-fill').style.width=pct+'%'; }
 function lsGet(k){ try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;} }
 function lsSet(k,v){ try{ v===null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
 
