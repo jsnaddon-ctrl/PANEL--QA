@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>FRR Window QA</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="FRR Window QA">
+<meta name="mobile-web-app-capable" content="yes">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.28.1/lib/msal-browser.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F7F7F5; --surface: #FFFFFF;
+    --border: rgba(0,0,0,0.12); --border-strong: rgba(0,0,0,0.22);
+    --text: #1A1A18; --text-muted: #6B6B67; --text-faint: #9B9B96;
+    --green: #3B6D11; --green-bg: #EAF3DE; --green-border: #639922;
+    --red: #791F1F; --red-bg: #FCEBEB; --red-border: #E24B4A;
+    --blue: #185FA5; --blue-bg: #E6F1FB; --blue-border: #378ADD;
+    --grey-bg: #EDEDEA;
+    --navy: #0D1B2A;
+    --radius: 10px; --radius-sm: 7px;
+  }
+  body { font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .app-header { background: var(--navy); padding: 1rem 1.25rem 0.875rem; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10; }
+  .app-icon { width: 38px; height: 38px; border-radius: var(--radius-sm); background: #fff; display:flex; align-items:center; justify-content:center; font-size: 22px; flex-shrink: 0; }
+  .app-header h1 { font-size: 17px; font-weight: 600; color: #fff; letter-spacing: -0.3px; }
+  .app-header p { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 1px; }
+  .header-right { margin-left: auto; flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
+  .hbtn { padding: 7px 12px; border-radius: 50px; font-size: 12px; font-weight: 500; font-family: inherit; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); color: #fff; text-decoration: none; white-space: nowrap; }
+  .hbtn.green { border-color: var(--green-border); background: var(--green-bg); color: var(--green); }
+  main { padding: 1rem; max-width: 600px; margin: 0 auto; }
+  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem 1.125rem; margin-bottom: 0.875rem; }
+  .card-title { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.75rem; display:flex; justify-content:space-between; align-items:center; }
+  .card-title .count { font-weight: 500; letter-spacing: 0; text-transform: none; }
+  .field-group { margin-bottom: 0.875rem; }
+  .field-group:last-child { margin-bottom: 0; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 5px; }
+  input[type="text"], select {
+    width: 100%; padding: 9px 11px;
+    border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    font-size: 15px; font-family: inherit;
+    background: var(--bg); color: var(--text);
+    outline: none; transition: border-color 0.15s;
+    -webkit-appearance: none; appearance: none;
+  }
+  input[type="text"]:focus, select:focus { border-color: var(--blue-border); background: #fff; }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B6B67' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px; }
+  textarea { width: 100%; padding: 9px 11px; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit; background: var(--bg); color: var(--text); outline: none; resize: none; height: 72px; transition: border-color 0.15s; }
+  textarea:focus { border-color: var(--blue-border); background: #fff; }
+
+  /* Checklist */
+  .section-label { font-size: 12px; font-weight: 600; color: var(--blue); margin: 0.9rem 0 0.4rem; }
+  .section-label:first-of-type { margin-top: 0; }
+  .chk { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 9px 0; border-top: 0.5px solid var(--border); }
+  .chk-text { font-size: 14px; line-height: 1.3; }
+  .chk-text small { display:block; font-size: 11.5px; color: var(--text-faint); margin-top: 2px; }
+  .seg { display: flex; gap: 5px; }
+  .seg button { width: 48px; height: 40px; border-radius: var(--radius-sm); border: 1.5px solid var(--border); background: var(--bg); font-size: 13px; font-weight: 700; font-family: inherit; color: var(--text-faint); cursor: pointer; }
+  .seg button:active { transform: scale(0.95); }
+  .seg button.on-pass { background: var(--green-bg); border-color: var(--green-border); color: var(--green); }
+  .seg button.on-fail { background: var(--red-bg); border-color: var(--red-border); color: var(--red); }
+  .seg button.on-na { background: var(--grey-bg); border-color: var(--border-strong); color: var(--text-muted); }
+  .chk.failed .chk-text { color: var(--red); }
+  .all-pass { width: 100%; margin-top: 0.75rem; padding: 10px; border-radius: var(--radius-sm); border: 1.5px dashed var(--green-border); background: transparent; color: var(--green); font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; }
+
+  .result-box { padding: 14px; border-radius: var(--radius-sm); text-align: center; font-size: 17px; font-weight: 700; border: 1.5px solid var(--border); background: var(--bg); color: var(--text-faint); }
+  .result-box.pass { background: var(--green-bg); border-color: var(--green-border); color: var(--green); }
+  .result-box.fail { background: var(--red-bg); border-color: var(--red-border); color: var(--red); }
+  .result-box small { display:block; font-size: 12px; font-weight: 500; margin-top: 3px; opacity: 0.85; }
+
+  .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .photo-slot { aspect-ratio: 4/3; border: 1.5px dashed var(--border-strong); border-radius: var(--radius-sm); background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; cursor: pointer; position: relative; overflow: hidden; }
+  .photo-slot:active { opacity: 0.8; }
+  .photo-slot .slot-icon { font-size: 26px; }
+  .photo-slot .slot-label { font-size: 11px; color: var(--text-faint); text-align:center; padding: 0 6px; }
+  .photo-slot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .photo-slot .tag { position: absolute; left: 5px; bottom: 5px; background: rgba(0,0,0,0.55); color: #fff; font-size: 10.5px; padding: 2px 7px; border-radius: 50px; z-index: 2; }
+  .photo-slot .remove-btn { position: absolute; top: 5px; right: 5px; width: 24px; height: 24px; background: rgba(0,0,0,0.55); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #fff; cursor: pointer; z-index: 2; }
+  .photo-slot.has-photo { border-style: solid; border-color: var(--border); }
+  input[type="file"] { display: none; }
+  .timestamp { font-size: 12px; color: var(--text-faint); text-align: center; margin-bottom: 0.875rem; }
+  .progress { display: none; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem 1.125rem; margin-bottom: 0.875rem; }
+  .progress.show { display: block; }
+  .progress-label { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
+  .progress-bar-wrap { background: var(--bg); border-radius: 50px; height: 6px; overflow: hidden; }
+  .progress-bar { height: 6px; background: var(--blue-border); border-radius: 50px; width: 0%; transition: width 0.4s; }
+  .success-banner { background: var(--green-bg); border: 0.5px solid var(--green-border); border-radius: var(--radius); padding: 1rem; margin-bottom: 0.875rem; display: none; }
+  .success-banner.show { display: block; }
+  .success-banner p { font-size: 14px; color: var(--green); font-weight: 600; }
+  .success-banner small { font-size: 12px; color: var(--green); opacity: 0.8; display: block; margin-top: 3px; }
+  .actions { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-bottom: 0.75rem; }
+  .btn { padding: 13px 0; border-radius: var(--radius); font-size: 15px; font-weight: 500; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; transition: all 0.12s; border: 1.5px solid var(--border); background: var(--surface); color: var(--text); }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--navy); border-color: var(--navy); color: #fff; }
+  .next-btn { width: 100%; padding: 16px; margin-bottom: 1.5rem; border-radius: var(--radius); border: 2px solid var(--border-strong); background: var(--surface); font-size: 16px; font-weight: 600; font-family: inherit; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .next-btn:active { background: var(--bg); }
+  .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(120px); background: var(--text); color: #fff; padding: 11px 20px; border-radius: 50px; font-size: 14px; font-weight: 500; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); z-index: 100; white-space: nowrap; pointer-events: none; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--red); }
+  .toast.success { background: var(--green); }
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="app-icon">🪟</div>
+  <div>
+    <h1>FRR Window QA</h1>
+    <p>Glass check before install <span style="opacity:0.4;">v1.1</span></p>
+  </div>
+  <div class="header-right">
+    <a class="hbtn" href="https://symonitenz.sharepoint.com/sites/ACMF/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FACMF%2FShared%20Documents%2FGeneral%2F3%2ELIVE%20PROJECTS%2F06%2E%20FRR%20WINDOWS%20%26%20DOORS%2FQA%20%2DFORMS" target="_blank">📁 QA</a>
+    <button class="hbtn" id="signin-btn" onclick="signIn()">☁️ Sign in</button>
+    <div class="hbtn green" id="signed-in-pill" style="display:none;" onclick="signOut()">✅ <span id="user-name">Connected</span></div>
+  </div>
+</header>
+<main>
+  <div class="card">
+    <div class="card-title">Job details</div>
+    <div class="field-group">
+      <label>Inspector name</label>
+      <input type="text" id="inspector" placeholder="Your name" autocomplete="on">
+    </div>
+    <div class="field-group">
+      <label>Job name / address</label>
+      <div id="job-locked" style="display:none; align-items:center; gap:8px;">
+        <div id="job-locked-text" style="flex:1; padding:9px 11px; border:0.5px solid var(--green-border); border-radius:var(--radius-sm); background:var(--green-bg); color:var(--green); font-size:15px; font-weight:600;"></div>
+        <button onclick="clearJob()" style="flex-shrink:0; padding:9px 12px; border-radius:var(--radius-sm); background:var(--bg); border:0.5px solid var(--border-strong); font-size:12px; cursor:pointer; color:var(--text-muted);">Change</button>
+      </div>
+      <div id="job-selector">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <select id="job-select" onchange="jobSelectChanged()" style="flex:1;">
+            <option value="">-- Sign in to load jobs --</option>
+          </select>
+          <button onclick="loadJobs()" style="flex-shrink:0; padding:9px 12px; border-radius:var(--radius-sm); background:var(--bg); border:0.5px solid var(--border-strong); font-size:16px; cursor:pointer;" title="Refresh job list">🔄</button>
+        </div>
+        <div id="new-job-wrap" style="display:none; margin-top:8px; gap:8px;">
+          <input type="text" id="new-job" placeholder="New job name / address">
+          <button onclick="useNewJob()" style="flex-shrink:0; padding:9px 14px; border-radius:var(--radius-sm); background:var(--blue-bg); border:1px solid var(--blue-border); color:var(--blue); font-size:13px; font-weight:600; cursor:pointer;">Use</button>
+        </div>
+      </div>
+    </div>
+    <input type="hidden" id="job-name">
+    <div class="two-col">
+      <div class="field-group">
+        <label>Window mark / ID</label>
+        <input type="text" id="window-id" placeholder="e.g. W01" autocomplete="off">
+      </div>
+      <div class="field-group">
+        <label>Level / location</label>
+        <input type="text" id="location" placeholder="e.g. L2 Bedroom 1" autocomplete="off">
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label>Reynaers system</label>
+        <select id="system">
+          <option value="">-- Select --</option>
+          <option>SlimLine 38</option>
+          <option>SlimLine 68</option>
+          <option>MasterLine 8</option>
+          <option>MasterLine 10</option>
+          <option>CS 77</option>
+          <option>CS 86-HI</option>
+          <option>ConceptPatio 155</option>
+          <option>Hi-Finity</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>FRR rating (per schedule)</label>
+        <input type="text" id="frr" placeholder="e.g. -/30/30" autocomplete="off">
+      </div>
+    </div>
+    <div class="field-group">
+      <label>Glass spec (per schedule)</label>
+      <input type="text" id="glass-spec" placeholder="e.g. Pyrobel 16 EW30 / IGU make-up" autocomplete="off">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Pre-install checklist <span class="count" id="chk-count"></span></div>
+    <div id="checklist"></div>
+    <button class="all-pass" onclick="markRemainingPass()">✓ Mark all unanswered as Pass</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Overall result</div>
+    <div class="result-box" id="result-box">Complete the checklist<small>Any ✗ = FAIL</small></div>
+    <div class="field-group" style="margin-top:0.875rem;">
+      <label>Notes / defects</label>
+      <textarea id="notes" placeholder="Describe any defects, what was done, who was told…"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Photos (up to 6)</div>
+    <div class="photo-grid" id="photo-grid"></div>
+    <div id="cam-inputs"></div>
+  </div>
+
+  <p class="timestamp" id="ts"></p>
+  <div class="progress" id="progress">
+    <div class="progress-label" id="progress-label">Uploading…</div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+  </div>
+  <div class="success-banner" id="success-banner">
+    <p>✅ Saved to SharePoint!</p>
+    <small id="success-path"></small>
+  </div>
+  <button class="next-btn" onclick="newInspection()">➕ Next window (keeps job)</button>
+  <div class="actions">
+    <button class="btn" onclick="savePDFLocal()">📄 PDF</button>
+    <button class="btn btn-primary" onclick="saveToOneDrive()">☁️ Save to OneDrive</button>
+  </div>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+const { jsPDF } = window.jspdf;
+
+// ── Microsoft sign-in (same app registration as Panel QA) ──
+const CLIENT_ID = '150fa2bd-c920-434c-acfd-abe1cc9fd805';
+const TENANT_ID = '82040108-96d2-4e15-a913-3cfe768d588f';
+// Uses the Panel QA page as the sign-in return page, because that address is already
+// registered in Azure. If you add window-qa.html as a redirect URI in Azure, you can change this.
+const REDIRECT_URI = 'https://jsnaddon-ctrl.github.io/PANEL--QA/panel-qa.html';
+const SCOPES = ['Files.ReadWrite.All','Sites.ReadWrite.All','User.Read'];
+// Where reports are saved: ACMF site › General › 3.LIVE PROJECTS › 06. FRR WINDOWS & DOORS › QA -FORMS › <job>
+const SITE = 'symonitenz.sharepoint.com:/sites/ACMF:';
+const LIVE_PATH = '/General/3.LIVE PROJECTS/06. FRR WINDOWS & DOORS';
+const QA_ROOT = LIVE_PATH + '/QA -FORMS';
+const enc = p => p.split('/').map(encodeURIComponent).join('/');
+
+// ── Checklist (edit here to change the questions) ──
+const CHECKLIST = [
+  { section: 'Glass', items: [
+    { id:'g1', text:'Glass matches schedule', hint:'Type, thickness, IGU make-up, tint/coating, size' },
+    { id:'g2', text:'Safety glass stamp visible & correct', hint:'Toughened / laminated mark where required' },
+    { id:'g3', text:'No chips, cracks, scratches or edge damage' },
+    { id:'g4', text:'IGU seal sound', hint:'No fogging, moisture or seal breaks, spacer straight' },
+    { id:'g5', text:'Low-E / coated face orientation correct' },
+  ]},
+  { section: 'Fire rating', items: [
+    { id:'x1', text:'FRR rating matches schedule', hint:'Glass, frame and system all suit the required rating' },
+    { id:'x2', text:'Fire glass stamp / label visible & correct', hint:'e.g. Pyrobel mark showing type & rating' },
+    { id:'x3', text:'Intumescent seals / fire glazing tape fitted', hint:'Continuous, correct type, per tested system' },
+    { id:'x4', text:'Fire-rated components only', hint:'Beads, fixings, setting blocks per tested system – no substitutes' },
+    { id:'x5', text:'FRR label / plate fitted to frame' },
+  ]},
+  { section: 'Glazing', items: [
+    { id:'z1', text:'Setting & location blocks correctly placed' },
+    { id:'z2', text:'Gaskets / wedges fully seated', hint:'Corners closed, no gaps or stretching' },
+    { id:'z3', text:'Glazing beads fitted & secure' },
+  ]},
+  { section: 'Frame & hardware', items: [
+    { id:'f1', text:'Frame / sash finish undamaged', hint:'Powdercoat or anodised – no scratches, dents' },
+    { id:'f2', text:'Corners & joints tight and sealed' },
+    { id:'f3', text:'Hardware fitted & complete', hint:'Handles, hinges, locks, restrictors, stays' },
+    { id:'f4', text:'Sash opens, closes & locks smoothly' },
+    { id:'f5', text:'Weather seals continuous' },
+    { id:'f6', text:'Drainage slots clear & caps fitted' },
+  ]},
+  { section: 'Ready to go', items: [
+    { id:'r1', text:'Window ID label attached & matches drawing' },
+    { id:'r2', text:'Protection on (film / corner protectors)' },
+  ]},
+];
+const ALL_ITEMS = CHECKLIST.flatMap(s => s.items);
+
+const PHOTO_SLOTS = ['Overall – outside','Glass stamp / IGU label','Overall – inside','Defect / detail','Defect / detail','Extra'];
+
+let msalInstance=null, currentAccount=null, driveId=null, savedJob='';
+const answers = {};                 // id -> 'pass' | 'fail' | 'na'
+const photos = PHOTO_SLOTS.map(()=>null);
+
+// ───────────────────── Sign-in ─────────────────────
+async function initMSAL(){
+  if(msalInstance) return;
+  msalInstance=new msal.PublicClientApplication({
+    auth:{clientId:CLIENT_ID,authority:'https://login.microsoftonline.com/'+TENANT_ID,redirectUri:REDIRECT_URI},
+    cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}
+  });
+  await msalInstance.initialize();
+  const accounts=msalInstance.getAllAccounts();
+  if(accounts.length){currentAccount=accounts[0];updateSignedIn(currentAccount.name||currentAccount.username);loadJobs();}
+}
+async function signIn(){
+  await initMSAL();
+  try{
+    const res=await msalInstance.loginPopup({scopes:SCOPES});
+    currentAccount=res.account; updateSignedIn(res.account.name||res.account.username);
+    toast('Signed in ✓','success'); loadJobs();
+  }catch(e){if(!String(e.message).includes('cancelled'))toast('Sign-in failed','error');console.error(e);}
+}
+function signOut(){
+  if(!confirm('Sign out?')) return;
+  if(msalInstance&&currentAccount)msalInstance.logoutPopup({account:currentAccount}).catch(()=>{});
+  currentAccount=null; driveId=null;
+  document.getElementById('signin-btn').style.display='';
+  document.getElementById('signed-in-pill').style.display='none';
+}
+function updateSignedIn(name){
+  document.getElementById('signin-btn').style.display='none';
+  document.getElementById('signed-in-pill').style.display='';
+  const short=name.includes('@')?name.split('@')[0]:name.split(' ')[0];
+  document.getElementById('user-name').textContent=short;
+  const insp=document.getElementById('inspector');
+  if(!insp.value) insp.value=name.includes('@')?'':name;
+}
+async function getToken(){
+  await initMSAL();
+  if(!currentAccount){await signIn();if(!currentAccount)return null;}
+  try{const r=await msalInstance.acquireTokenSilent({scopes:SCOPES,account:currentAccount});return r.accessToken;}
+  catch(e){const r=await msalInstance.acquireTokenPopup({scopes:SCOPES,account:currentAccount});return r.accessToken;}
+}
+async function getDriveId(token){
+  if(driveId)return driveId;
+  const r=await fetch('https://graph.microsoft.com/v1.0/sites/'+SITE+'/drive?$select=id',{headers:{Authorization:'Bearer '+token}});
+  if(!r.ok) throw new Error('Could not open ACMF SharePoint ('+r.status+')');
+  const d=await r.json(); driveId=d.id; return driveId;
+}
+
+// ───────────────────── Jobs ─────────────────────
+async function listFolders(token,did,path){
+  const r=await fetch('https://graph.microsoft.com/v1.0/drives/'+did+'/root:'+enc(path)+':/children?$top=999&$select=name,folder',{headers:{Authorization:'Bearer '+token}});
+  if(!r.ok) return [];
+  return ((await r.json()).value||[]).filter(i=>i.folder).map(i=>i.name);
+}
+async function loadJobs(){
+  if(!currentAccount)return;
+  const sel=document.getElementById('job-select');
+  try{
+    const token=await getToken(); if(!token)return;
+    const did=await getDriveId(token);
+    sel.innerHTML='<option value="">-- Select job --</option>';
+    // Live FRR jobs (WI… folders) plus any job that already has a QA folder
+    const [live,qa]=await Promise.all([listFolders(token,did,LIVE_PATH),listFolders(token,did,QA_ROOT)]);
+    const jobs=[...new Set([...live.filter(n=>/^WI\d/i.test(n)),...qa])].sort((a,b)=>b.localeCompare(a));
+    jobs.forEach(n=>{const opt=document.createElement('option'); opt.value=n; opt.textContent=n; sel.appendChild(opt);});
+  }catch(e){console.warn('Could not load jobs',e);}
+  const newOpt=document.createElement('option'); newOpt.value='__new__'; newOpt.textContent='+ New job…';
+  sel.appendChild(newOpt);
+}
+function jobSelectChanged(){
+  const val=document.getElementById('job-select').value;
+  document.getElementById('new-job-wrap').style.display = val==='__new__' ? 'flex' : 'none';
+  if(val==='__new__'){document.getElementById('new-job').focus();return;}
+  if(val) setJob(val);
+}
+function useNewJob(){
+  const v=document.getElementById('new-job').value.trim();
+  if(!v){toast('Type a job name','error');return;}
+  setJob(v);
+}
+function setJob(name){
+  savedJob=name; document.getElementById('job-name').value=name;
+  document.getElementById('job-locked-text').textContent=name;
+  document.getElementById('job-locked').style.display='flex';
+  document.getElementById('job-selector').style.display='none';
+}
+function clearJob(){
+  savedJob=''; document.getElementById('job-name').value='';
+  document.getElementById('job-select').value='';
+  document.getElementById('new-job').value='';
+  document.getElementById('new-job-wrap').style.display='none';
+  document.getElementById('job-locked').style.display='none';
+  document.getElementById('job-selector').style.display='block';
+}
+
+// ───────────────────── Checklist ─────────────────────
+function renderChecklist(){
+  const wrap=document.getElementById('checklist'); wrap.innerHTML='';
+  CHECKLIST.forEach(sec=>{
+    const h=document.createElement('div'); h.className='section-label'; h.textContent=sec.section; wrap.appendChild(h);
+    sec.items.forEach(it=>{
+      const row=document.createElement('div'); row.className='chk'; row.id='row-'+it.id;
+      row.innerHTML='<div class="chk-text">'+it.text+(it.hint?'<small>'+it.hint+'</small>':'')+'</div>'+
+        '<div class="seg">'+
+          '<button data-v="pass" onclick="answer(\''+it.id+'\',\'pass\')">✓</button>'+
+          '<button data-v="fail" onclick="answer(\''+it.id+'\',\'fail\')">✗</button>'+
+          '<button data-v="na" onclick="answer(\''+it.id+'\',\'na\')">N/A</button>'+
+        '</div>';
+      wrap.appendChild(row);
+    });
+  });
+  refreshChecklist();
+}
+function answer(id,v){
+  answers[id] = answers[id]===v ? undefined : v;   // tap again to clear
+  refreshChecklist();
+}
+function markRemainingPass(){
+  ALL_ITEMS.forEach(it=>{ if(!answers[it.id]) answers[it.id]='pass'; });
+  refreshChecklist();
+}
+function refreshChecklist(){
+  ALL_ITEMS.forEach(it=>{
+    const row=document.getElementById('row-'+it.id);
+    row.classList.toggle('failed', answers[it.id]==='fail');
+    row.querySelectorAll('button').forEach(b=>{
+      const v=b.dataset.v; b.className = answers[it.id]===v ? 'on-'+v : '';
+    });
+  });
+  const done=ALL_ITEMS.filter(it=>answers[it.id]).length;
+  document.getElementById('chk-count').textContent=done+' / '+ALL_ITEMS.length;
+  const r=overallResult(), box=document.getElementById('result-box');
+  const fails=ALL_ITEMS.filter(it=>answers[it.id]==='fail').length;
+  if(r==='fail'){box.className='result-box fail';box.innerHTML='✗ FAIL<small>'+fails+' item'+(fails>1?'s':'')+' failed – note the defect & take a photo</small>';}
+  else if(r==='pass'){box.className='result-box pass';box.innerHTML='✓ PASS<small>Ready to install</small>';}
+  else {box.className='result-box';box.innerHTML='Complete the checklist<small>'+(ALL_ITEMS.length-done)+' still to answer</small>';}
+}
+function overallResult(){
+  if(ALL_ITEMS.some(it=>answers[it.id]==='fail')) return 'fail';
+  if(ALL_ITEMS.every(it=>answers[it.id])) return 'pass';
+  return null;
+}
+
+// ───────────────────── Photos ─────────────────────
+function renderPhotoSlots(){
+  const g=document.getElementById('photo-grid'), ins=document.getElementById('cam-inputs');
+  g.innerHTML=''; ins.innerHTML='';
+  PHOTO_SLOTS.forEach((lbl,i)=>{
+    const s=document.createElement('div'); s.className='photo-slot'; s.id='slot-'+i;
+    s.onclick=()=>document.getElementById('cam-'+i).click(); g.appendChild(s);
+    const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.id='cam-'+i;
+    inp.onchange=e=>handlePhoto(e,i); ins.appendChild(inp);
+    renderSlot(i);
+  });
+}
+function renderSlot(i){
+  const s=document.getElementById('slot-'+i);
+  if(photos[i]){
+    s.classList.add('has-photo');
+    s.innerHTML='<img src="'+photos[i]+'"><span class="tag">'+PHOTO_SLOTS[i]+'</span><div class="remove-btn" onclick="removePhoto(event,'+i+')">✕</div>';
+  }else{
+    s.classList.remove('has-photo');
+    s.innerHTML='<span class="slot-icon">📷</span><span class="slot-label">'+PHOTO_SLOTS[i]+'</span>';
+  }
+}
+// Shrink iPad photos (often 4–8 MB) to ~1600px JPEG so uploads and PDFs stay quick
+function handlePhoto(e,i){
+  const file=e.target.files[0]; if(!file)return;
+  const img=new Image(), url=URL.createObjectURL(file);
+  img.onload=()=>{
+    const MAX=1600, sc=Math.min(1,MAX/Math.max(img.width,img.height));
+    const c=document.createElement('canvas'); c.width=Math.round(img.width*sc); c.height=Math.round(img.height*sc);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    photos[i]=c.toDataURL('image/jpeg',0.82); URL.revokeObjectURL(url); renderSlot(i);
+  };
+  img.onerror=()=>{toast('Could not read photo','error');};
+  img.src=url;
+}
+function removePhoto(e,i){
+  e.stopPropagation(); photos[i]=null; document.getElementById('cam-'+i).value=''; renderSlot(i);
+}
+
+// ───────────────────── Form ─────────────────────
+function updateTimestamp(){
+  const now=new Date();
+  document.getElementById('ts').textContent='Inspection time: '+
+    now.toLocaleDateString('en-NZ',{weekday:'short',day:'numeric',month:'short',year:'numeric'})+
+    ' at '+now.toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'});
+}
+function getFields(){
+  const v=id=>document.getElementById(id).value.trim();
+  return { job:v('job-name'), frr:v('frr'), win:v('window-id'), location:v('location'),
+    system:v('system'), glass:v('glass-spec'), inspector:v('inspector'), notes:v('notes'),
+    time:document.getElementById('ts').textContent.replace('Inspection time: ',''), result:overallResult() };
+}
+function validate(){
+  const f=getFields();
+  if(!f.inspector){toast('Enter inspector name','error');return null;}
+  if(!f.job){toast('Select or enter a job','error');return null;}
+  if(!f.win){toast('Enter the window mark / ID','error');return null;}
+  if(!f.result){toast('Finish the checklist first','error');return null;}
+  if(f.result==='fail' && !f.notes){toast('Add a note describing the defect','error');return null;}
+  return f;
+}
+function resetForNext(){
+  Object.keys(answers).forEach(k=>delete answers[k]); refreshChecklist();
+  ['window-id','location','notes'].forEach(id=>document.getElementById(id).value='');
+  photos.forEach((_,i)=>{photos[i]=null;document.getElementById('cam-'+i).value='';renderSlot(i);});
+  document.getElementById('success-banner').classList.remove('show');
+  if(savedJob) setJob(savedJob);
+  updateTimestamp(); window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ───────────────────── PDF ─────────────────────
+const LOGO_INV='data:image/png;base64,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';
+function buildPDF(f){
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210, H=297, M=15, BOTTOM=278;
+  const isPass=f.result==='pass';
+
+  function footer(){
+    doc.setFillColor(15,15,15); doc.rect(0,283,W,14,'F');
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(120,120,120);
+    doc.text('Symonite Panels Ltd  |  FRR Window QA Report  |  '+f.job+'  |  '+f.win, M, 291);
+  }
+  function newPage(){ footer(); doc.addPage(); return 15; }
+
+  // Header
+  doc.setFillColor(15,15,15); doc.rect(0,0,W,32,'F');
+  try{doc.addImage(LOGO_INV,'PNG',M,4,70,24);}catch(e){}
+  doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(180,180,180);
+  doc.text('FRR WINDOW / GLASS QA REPORT', W-M, 12, {align:'right'});
+  doc.setFontSize(7.5); doc.setTextColor(110,110,110);
+  doc.text('Pre-install check', W-M, 18, {align:'right'});
+  doc.setFillColor(...(isPass?[234,243,222]:[252,235,235]));
+  doc.roundedRect(W-M-28,23,28,7,2,2,'F');
+  doc.setDrawColor(...(isPass?[99,153,34]:[226,75,74])); doc.setLineWidth(0.3);
+  doc.roundedRect(W-M-28,23,28,7,2,2,'S');
+  doc.setFontSize(8.5); doc.setFont('helvetica','bold'); doc.setTextColor(...(isPass?[59,109,17]:[121,31,31]));
+  doc.text(isPass?'PASS':'FAIL', W-M-14, 28, {align:'center'});
+
+  // Info grid
+  let y=40;
+  const cell=(label,value,x,maxW)=>{
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(150,150,150); doc.text(label,x,y);
+    doc.setFontSize(10.5); doc.setFont('helvetica','bold'); doc.setTextColor(15,15,15);
+    doc.text(doc.splitTextToSize(value||'—',maxW)[0], x, y+6);
+  };
+  cell('JOB / ADDRESS', f.job, M, 85); cell('WINDOW', f.win, M+95, 35); cell('LOCATION', f.location, M+135, 45);
+  y+=15; doc.setDrawColor(225,225,225); doc.line(M,y,W-M,y); y+=6;
+  cell('SYSTEM', f.system, M, 50); cell('GLASS SPEC', f.glass, M+55, 70); cell('FRR RATING', f.frr, M+135, 45);
+  y+=15; doc.line(M,y,W-M,y); y+=6;
+  cell('INSPECTOR', f.inspector, M, 85); cell('DATE / TIME', f.time, M+95, 85);
+  y+=15; doc.line(M,y,W-M,y); y+=7;
+
+  // Checklist table
+  doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(150,150,150);
+  doc.text('CHECKLIST', M, y); y+=4;
+  CHECKLIST.forEach(sec=>{
+    if(y>BOTTOM-10) y=newPage();
+    doc.setFillColor(242,242,240); doc.rect(M,y,W-M*2,6,'F');
+    doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(60,60,60);
+    doc.text(sec.section.toUpperCase(), M+2, y+4.2); y+=6;
+    sec.items.forEach(it=>{
+      if(y>BOTTOM-6) y=newPage();
+      const a=answers[it.id];
+      doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(a==='fail'?121:25, a==='fail'?31:25, a==='fail'?31:25);
+      doc.text(it.text, M+2, y+4.3);
+      const lbl=a==='pass'?'PASS':a==='fail'?'FAIL':'N/A';
+      const col=a==='pass'?[59,109,17]:a==='fail'?[121,31,31]:[130,130,130];
+      const bg=a==='pass'?[234,243,222]:a==='fail'?[252,235,235]:[237,237,234];
+      doc.setFillColor(...bg); doc.roundedRect(W-M-18,y+1,16,4.6,1.2,1.2,'F');
+      doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...col);
+      doc.text(lbl, W-M-10, y+4.2, {align:'center'});
+      doc.setDrawColor(235,235,235); doc.line(M,y+6.5,W-M,y+6.5);
+      y+=6.5;
+    });
+  });
+  y+=6;
+
+  // Notes
+  if(f.notes){
+    const nl=doc.splitTextToSize(f.notes, W-M*2);
+    if(y+8+nl.length*5>BOTTOM) y=newPage();
+    doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(150,150,150);
+    doc.text('NOTES / DEFECTS', M, y); y+=5;
+    doc.setFontSize(10); doc.setFont('helvetica','normal'); doc.setTextColor(15,15,15);
+    doc.text(nl, M, y); y+=nl.length*5+5;
+  }
+
+  // Photos – two per row, new page when needed
+  const hp=photos.map((p,i)=>p?{p,label:PHOTO_SLOTS[i]}:null).filter(Boolean);
+  if(hp.length){
+    const gutter=5, imgW=(W-M*2-gutter)/2, imgH=imgW*0.75;
+    if(y+8+imgH>BOTTOM) y=newPage();
+    doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(150,150,150);
+    doc.text('PHOTOS ('+hp.length+')', M, y); y+=4;
+    for(let i=0;i<hp.length;i+=2){
+      if(y+imgH+6>BOTTOM) y=newPage();
+      for(let j=0;j<2&&i+j<hp.length;j++){
+        const x=M+j*(imgW+gutter);
+        try{doc.addImage(hp[i+j].p,'JPEG',x,y,imgW,imgH,'','MEDIUM');}catch(e){}
+        doc.setDrawColor(210,210,210); doc.roundedRect(x,y,imgW,imgH,2,2,'S');
+        doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(120,120,120);
+        doc.text(hp[i+j].label, x, y+imgH+3.5);
+      }
+      y+=imgH+8;
+    }
+  }
+  footer();
+  const n=doc.getNumberOfPages();
+  for(let p=1;p<=n;p++){doc.setPage(p);doc.setFontSize(7);doc.setTextColor(120,120,120);doc.text('Page '+p+' of '+n, W-M, 291, {align:'right'});}
+  return doc;
+}
+function safe(s){return s.replace(/[^a-z0-9-_. ]/gi,'_').trim();}
+function baseName(f){
+  const d=new Date(), ds=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'-'+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0');
+  return safe(f.win+'-'+(f.result==='pass'?'PASS':'FAIL')+'-'+ds);
+}
+function savePDFLocal(){
+  const f=validate(); if(!f)return;
+  buildPDF(f).save(safe(f.job)+'-'+baseName(f)+'-QA.pdf');
+  toast('PDF saved!','success');
+}
+
+// ───────────────────── Upload ─────────────────────
+function setProgress(label,pct){
+  const el=document.getElementById('progress');
+  if(pct===null){el.classList.remove('show');return;}
+  el.classList.add('show');
+  document.getElementById('progress-label').textContent=label;
+  document.getElementById('progress-bar').style.width=pct+'%';
+}
+async function ensureFolder(token,did,folderPath){
+  const parts=folderPath.split('/').filter(Boolean); let current='';
+  for(const part of parts){
+    const parent=current; current+='/'+part;
+    const check=await fetch('https://graph.microsoft.com/v1.0/drives/'+did+'/root:'+enc(QA_ROOT+current),{headers:{Authorization:'Bearer '+token}});
+    if(!check.ok){
+      await fetch('https://graph.microsoft.com/v1.0/drives/'+did+'/root:'+enc(QA_ROOT+parent)+':/children',{
+        method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+        body:JSON.stringify({name:part,folder:{},'@microsoft.graph.conflictBehavior':'replace'})});
+    }
+  }
+}
+async function uploadFile(token,path,blob,contentType){
+  const did=await getDriveId(token);
+  const res=await fetch('https://graph.microsoft.com/v1.0/drives/'+did+'/root:'+enc(QA_ROOT+path)+':/content',
+    {method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':contentType},body:blob});
+  if(!res.ok){throw new Error('Upload failed ('+res.status+'): '+await res.text());}
+  return res.json();
+}
+let saving=false;
+async function saveToOneDrive(silent=false){
+  if(saving) return false;
+  const f=validate(); if(!f) return false;
+  const token=await getToken(); if(!token) return false;
+  saving=true;
+  try{
+    document.getElementById('success-banner').classList.remove('show');
+    setProgress('Generating PDF…',10);
+    const doc=buildPDF(f);
+    const folderPath='/'+f.job.replace(/[\\/:*?"<>|#%]/g,'-');
+    const name=baseName(f);
+    setProgress('Creating folders…',20);
+    try{ await ensureFolder(token, await getDriveId(token), folderPath); }catch(e){ console.warn('Folder create',e); }
+    setProgress('Uploading PDF…',35);
+    await uploadFile(token, folderPath+'/'+name+'-QA.pdf', doc.output('blob'), 'application/pdf');
+    const pl=photos.map((p,i)=>p?{data:p,idx:i}:null).filter(Boolean);
+    for(let i=0;i<pl.length;i++){
+      setProgress('Uploading photo '+(i+1)+' of '+pl.length+'…',35+Math.round(((i+1)/pl.length)*60));
+      try{ const blob=await (await fetch(pl[i].data)).blob();
+        await uploadFile(token, folderPath+'/'+name+'-photo'+(pl[i].idx+1)+'.jpg', blob, 'image/jpeg');
+      }catch(e){console.warn('Photo upload failed',e);}
+    }
+    setProgress('Done!',100); setTimeout(()=>setProgress(null),1200);
+    document.getElementById('success-banner').classList.add('show');
+    document.getElementById('success-path').textContent='Saved to: 06. FRR WINDOWS & DOORS / QA -FORMS / '+f.job;
+    toast('Saved to SharePoint ✓','success');
+    if(!silent) setTimeout(()=>{resetForNext();toast('Ready for next window 👍','success');},2500);
+    return true;
+  }catch(e){
+    setProgress(null); toast('Upload failed – check connection','error'); console.error(e); return false;
+  }finally{ saving=false; }
+}
+async function newInspection(){
+  const f=getFields();
+  const started = f.win || Object.values(answers).some(Boolean) || photos.some(Boolean);
+  if(started && f.result){
+    const ok=await saveToOneDrive(true); if(!ok) return;
+  } else if(started){
+    if(!confirm('This window has not been finished or saved. Clear it anyway?')) return;
+  }
+  resetForNext(); toast('Ready for next window');
+}
+
+// ───────────────────── Misc ─────────────────────
+let toastTimer;
+function toast(msg,type){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className='toast show'+(type?' '+type:'');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.className='toast',3200);
+}
+// Remember inspector name on this iPad
+try{
+  const insp=document.getElementById('inspector');
+  insp.value=localStorage.getItem('wqa-inspector')||'';
+  insp.addEventListener('change',()=>{try{localStorage.setItem('wqa-inspector',insp.value.trim());}catch(e){}});
+}catch(e){}
+
+renderChecklist(); renderPhotoSlots(); updateTimestamp(); setInterval(updateTimestamp,30000);
+initMSAL().catch(e=>console.warn('MSAL init',e));
+</script>
+</body>
+</html>
